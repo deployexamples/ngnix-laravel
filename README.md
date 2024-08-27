@@ -1,6 +1,6 @@
 # ngix-laravel
 
-Setup Laravel with Apache server and MySQL database on your domain.
+Setup Laravel with ngnix server and MySQL database on your domain.
 
 ## Ngnix Setup
 
@@ -174,7 +174,7 @@ Install PHP and necessary extensions:
 
 ```bash
 sudo apt update
-sudo apt install php php-cli php-mysql libapache2-mod-php php-xml php-mbstring
+sudo apt install php php-cli php-mysql php-xml php-mbstring php-json php-curl php-zip php-8.1fpm
 ```
 
 ## Install MySQL
@@ -256,93 +256,6 @@ Run migrations to set up your database schema:
 php artisan migrate
 ```
 
-## Configure Apache
-
-To configure Apache to serve a website based on a domain name, you'll need to set up a Virtual Host. Here's how you can do it on Ubuntu:
-
-### Step 1: Enable the rewrite module (optional but recommended)
-
-This module allows URL rewriting, which is often needed for domain-based routing.
-
-```bash
-sudo a2enmod rewrite
-sudo systemctl restart apache2
-```
-
-### Step 2: Create a Virtual Host Configuration File
-
-#### Navigate to the sites-available directory:
-
-```bash
-cd /etc/apache2/sites-available/
-```
-
-#### Create a new configuration file for your domain:
-
--   #### Replace yourdomain.com with your actual domain name.
-
-```bash
-sudo nano yourdomain.com.conf
-```
-
--   #### Add the following content to the file:
-
-```apache
-<VirtualHost *:80>
-    ServerName apache-laravel.bimash.com.np
-
-    ProxyPass /  http://localhost:8000/
-    ProxyPassReverse /  http://localhost:8000/
-
-    <Proxy *>
-        Require all granted
-    </Proxy>
-
-    # Optional: Log directives for debugging
-    ErrorLog ${APACHE_LOG_DIR}/proxy_error.log
-    CustomLog ${APACHE_LOG_DIR}/proxy_access.log combined
-</VirtualHost>
-
-```
-
--   #### Enable Required Apache Modules
-
-```bash
-sudo a2enmod proxy
-sudo a2enmod proxy_http
-```
-
--   #### Save and Enable the Virtual Host
-
-```bash
-sudo a2ensite apache-laravel.bimash.com.np.conf
-```
-
-### Step 3: Disable Conflicting Sites
-
-If there’s a default site that could conflict, disable it:
-
-```bash
-sudo a2dissite 000-default.conf
-```
-
-### Step 4: Reload Apache
-
-Apply the configuration changes by reloading Apache:
-
-```bash
-sudo systemctl reload apache2
-```
-
-### Step 5: Check DNS
-
-Ensure that the DNS for apache-laravel.bimash.com.np points to your server’s IP address.
-
-### Step 6: Test the Configuration
-
-Open a web browser and go to http://yourdomain.com. You should see the "Welcome to yourdomain.com" message you added in the index.html file.
-If you need to use SSL (HTTPS), you can obtain and configure an SSL certificate using Let's Encrypt with Certbot. This is often required for modern web standards.
-
 ## Supervisor/Systemd Configuration
 
 To run php artisan serve in the background, you can use either systemd or supervisor. Below are instructions for both methods:
@@ -369,8 +282,8 @@ After=network.target
 [Service]
 User=azureuser
 Group=azureuser
-WorkingDirectory=/home/azureuser/apache/apache-laravel/
-ExecStart=/usr/bin/php /home/azureuser/apache/apache-laravel/artisan serve --host=0.0.0.0 --port=8000
+WorkingDirectory=/home/azureuser/ngnix/ngnix-laravel/
+ExecStart=/usr/bin/php /home/azureuser/ngnix/ngnix-laravel/artisan serve --host=0.0.0.0 --port=3001
 Restart=always
 RestartSec=5
 StandardOutput=syslog
@@ -409,6 +322,12 @@ sudo systemctl enable laravel-serve
 sudo systemctl status laravel-serve
 ```
 
+#### Restart ngnix
+
+```bash
+sudo systemctl reload nginx
+```
+
 ## Using supervisor
 
 ### Step 1: Install Supervisor
@@ -434,8 +353,8 @@ Add the following configuration:
 
 ```ini
 [program:laravel-serve]
-command=/usr/bin/php /home/azureuser/apache/apache-laravel/artisan serve --host=0.0.0.0 --port=8000
-directory=/home/azureuser/apache/apache-laravel/
+command=/usr/bin/php /home/azureuser/ngnix/ngnix-laravel/artisan serve --host=0.0.0.0 --port=8000
+directory=/home/azureuser/ngnix/ngnix-laravel/
 autostart=true
 autorestart=true
 user=azureuser
@@ -479,7 +398,7 @@ sudo supervisorctl status
 Navigate to your Laravel project directory and pull the latest changes:
 
 ```bash
-cd /path/to/your/apache-laravel/
+cd /path/to/your/ngnix-laravel/
 git pull origin main
 ```
 
@@ -495,12 +414,12 @@ php artisan route:cache
 php artisan view:clear
 ```
 
-### Step 3: Reload Apache
+### Step 3: Reload ngnix
 
-To apply any changes to the Apache configuration, reload Apache:
+To apply any changes to the ngnix configuration, reload ngnix:
 
 ```bash
-sudo systemctl reload apache2
+sudo systemctl reload ngnix2
 ```
 
 ### Step 4: Check for Laravel Queue Workers or Background Jobs
@@ -515,7 +434,7 @@ If you're using Supervisor or another process manager, restart those services as
 
 ### Step 5: Verify Changes
 
-After reloading Apache and clearing the Laravel cache, visit your application’s URL to verify that the changes have been applied correctly.
+After reloading ngnix and clearing the Laravel cache, visit your application’s URL to verify that the changes have been applied correctly.
 
 ## CI/CD Pipeline Deployment
 
@@ -551,12 +470,12 @@ jobs:
             - name: Deploy to Azure VM
               run: |
                   ssh -o StrictHostKeyChecking=no azureuser@20.51.207.28 << 'EOF'
-                  cd apache/apache-laravel/
+                  cd ngnix/ngnix-laravel/
                   git pull origin main || { echo 'Git pull failed'; exit 1; }
                   php artisan config:cache || { echo 'Config cache failed'; exit 1; }
                   php artisan route:cache || { echo 'Route cache failed'; exit 1; }
                   php artisan view:clear || { echo 'View clear failed'; exit 1; }
-                  sudo systemctl reload apache2 || { echo 'Apache reload failed'; exit 1; }
+                  sudo systemctl reload ngnix2 || { echo 'ngnix reload failed'; exit 1; }
                   php artisan queue:restart || { echo 'Queue restart failed'; exit 1; }
                   EOF
 ```

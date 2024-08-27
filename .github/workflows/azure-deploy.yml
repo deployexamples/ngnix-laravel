@@ -16,7 +16,7 @@ jobs:
       - name: Set up PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.1.2'
+          php-version: "8.1.2"
 
       - name: Install Composer dependencies
         run: composer install --no-interaction --no-suggest
@@ -28,13 +28,13 @@ jobs:
 
       - name: Deploy to Azure VM
         run: |
-          ssh -o StrictHostKeyChecking=no azureuser@20.51.207.28 << 'EOF'
-          cd apache/apache-laravel/
+          ssh -o StrictHostKeyChecking=no azureuser@172.174.168.214 << 'EOF'
+          cd ngnix/ngnix-laravel/
           git pull origin main || { echo 'Git pull failed'; exit 1; }
           composer install --no-interaction --no-suggest || { echo 'Composer install failed'; exit 1; }
           php artisan config:cache || { echo 'Config cache failed'; exit 1; }
           php artisan route:cache || { echo 'Route cache failed'; exit 1; }
           php artisan view:clear || { echo 'View clear failed'; exit 1; }
-          sudo systemctl reload apache2 || { echo 'Apache reload failed'; exit 1; }
+          sudo systemctl reload nginx
           php artisan queue:restart || { echo 'Queue restart failed'; exit 1; }
           EOF
