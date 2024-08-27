@@ -1,0 +1,40 @@
+name: 🚀 Deploy Laravel
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  web-deploy:
+    name: 🎉 Deploy
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.1.2'
+
+      - name: Install Composer dependencies
+        run: composer install --no-interaction --no-suggest
+
+      - name: Set up SSH
+        uses: webfactory/ssh-agent@v0.7.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Deploy to Azure VM
+        run: |
+          ssh -o StrictHostKeyChecking=no azureuser@20.51.207.28 << 'EOF'
+          cd apache/apache-laravel/
+          git pull origin main || { echo 'Git pull failed'; exit 1; }
+          composer install --no-interaction --no-suggest || { echo 'Composer install failed'; exit 1; }
+          php artisan config:cache || { echo 'Config cache failed'; exit 1; }
+          php artisan route:cache || { echo 'Route cache failed'; exit 1; }
+          php artisan view:clear || { echo 'View clear failed'; exit 1; }
+          sudo systemctl reload apache2 || { echo 'Apache reload failed'; exit 1; }
+          php artisan queue:restart || { echo 'Queue restart failed'; exit 1; }
+          EOF
