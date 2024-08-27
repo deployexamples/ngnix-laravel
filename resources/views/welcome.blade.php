@@ -4,7 +4,7 @@
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
 
-        <title>Laravel</title>
+        <title> Ngnix + PHP + MySQL + Laravel</title>
 
         <!-- Fonts -->
         <link rel="preconnect" href="https://fonts.bunny.net">
@@ -39,7 +39,7 @@
                 </div>
                 <div class="flex justify-center">
                     <h1 class="mt-6 text-4xl font-bold text-gray-900 dark:text-white">
-                        Apache + PHP + MySQL + Laravel
+                        Ngnix + PHP + MySQL + Laravel
                     </h1>
                 </div>
 
